@@ -15,6 +15,9 @@ import { colors, spacing, TAB_BAR_SPACE } from '../../lib/theme';
 
 const NO_FILTERS = { query: '', boxId: null, colorId: null, groupKey: null };
 
+// Definido fuera del componente para que React no lo vuelva a crear en cada pintado.
+const RowSeparator = () => <View style={{ height: spacing.md }} />;
+
 export default function Inventario() {
   const [filters, setFilters] = useState(NO_FILTERS);
   const [detailItem, setDetailItem] = useState(null); // fila abierta en el detalle
@@ -54,7 +57,7 @@ export default function Inventario() {
         keyExtractor={(it) => `${it.part_num}-${it.color_id}`}
         renderItem={({ item }) => <PartRow item={item} highlightBoxId={filters.boxId} onPress={setDetailItem} />}
         contentContainerStyle={styles.content}
-        ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+        ItemSeparatorComponent={RowSeparator}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         ListHeaderComponent={

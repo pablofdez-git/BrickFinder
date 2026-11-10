@@ -41,7 +41,7 @@ export default function KeyboardAwareScrollView({ contentContainerStyle, onScrol
       showSub.remove();
       hideSub.remove();
     };
-  }, []);
+  }, [ref]);
 
   return (
     <ScrollView

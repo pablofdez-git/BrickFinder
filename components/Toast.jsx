@@ -23,6 +23,8 @@ export default function Toast({ message }) {
       Animated.timing(anim, { toValue: 0, duration: 220, useNativeDriver: true }).start();
     }, SHOW_MS[message.type] ?? SHOW_MS.ok);
     return () => clearTimeout(timer);
+    // Solo se reinicia cuando llega un aviso NUEVO (cambia el id), no en cada pintado.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [message?.id]);
 
   const current = shown.current;
