@@ -1,3 +1,15 @@
 .env
 scripts/data/
 node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+.metro-health-check*
+.DS_Store
+*.tsbuildinfo
+/ios
+/android
+.claude/
