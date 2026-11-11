@@ -123,8 +123,11 @@ export default function Sets() {
         }
       />
 
+      {/* `key`: al abrir otro set el modal se crea de nuevo (filtros, botón de subir y piezas vuelven a cero). */}
       <SetDetailModal
+        key={selected?.set_num ?? 'cerrado'}
         set={selected}
+        toast={toast}
         onClose={() => setSelectedNum(null)}
         onChangeStatus={handleChangeStatus}
         onResync={handleResync}

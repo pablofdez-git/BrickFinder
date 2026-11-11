@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { addSet, deleteSet, fetchSetsSummary, resyncSetParts, setSetStatus } from '../lib/setsApi';
 
 // Lista de sets con progreso, pull-to-refresh y las acciones (añadir, cambiar estado, borrar).
@@ -21,9 +21,8 @@ export default function useSets() {
     }
   }, []);
 
-  useEffect(() => {
-    reload();
-  }, [reload]);
+  // No hay carga inicial aquí: la pantalla llama a `reload` con useFocusEffect, que ya se ejecuta
+  // al abrirla por primera vez (así la consulta, que es pesada, no se lanza dos veces).
 
   const refresh = useCallback(() => {
     setRefreshing(true);

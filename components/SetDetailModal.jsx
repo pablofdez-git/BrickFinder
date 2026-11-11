@@ -7,6 +7,7 @@ import PartImage from './PartImage';
 import ScrollToTopButton from './ScrollToTopButton';
 import SetPartFilters from './SetPartFilters';
 import SetPartRow from './SetPartRow';
+import Toast from './Toast';
 import useSetCheck from '../hooks/useSetCheck';
 import { colors, radius, spacing } from '../lib/theme';
 
@@ -16,7 +17,7 @@ const keyOf = (r) => `${r.part_num}-${r.color_id}-${r.is_spare}`;
 // Detalle de un set a pantalla completa: qué piezas tienes, cuáles faltan y en qué caja está cada una.
 // `set` es una fila de sets_summary (o null si está cerrado). Los cambios (estado, borrar) los hace quien llama
 // con `onChangeStatus(setNum, status)` y `onDelete(setNum)`; ambas devuelven una promesa.
-export default function SetDetailModal({ set, onClose, onChangeStatus, onResync, onDelete }) {
+export default function SetDetailModal({ set, toast, onClose, onChangeStatus, onResync, onDelete }) {
   const insets = useSafeAreaInsets();
   const { rows, loading, error, reload } = useSetCheck(set?.set_num);
   const [filters, setFilters] = useState({ onlyMissing: false, showSpares: false });
@@ -36,7 +37,8 @@ export default function SetDetailModal({ set, onClose, onChangeStatus, onResync,
   if (!set) return null;
 
   const mounted = set.status === 'montado';
-  const complete = missingPieces === 0;
+  const failed = !loading && !!error; // sin datos no se puede decir ni que está completo ni que falta algo
+  const complete = !failed && missingPieces === 0;
 
   async function toggleStatus() {
     setBusy(true);
@@ -125,13 +127,18 @@ export default function SetDetailModal({ set, onClose, onChangeStatus, onResync,
               <View style={styles.body}>
                 {/* Resultado de la comprobación */}
                 <BrickCard
-                  color={complete ? colors.success : colors.primary}
-                  edge={complete ? '#146B3C' : colors.primaryDark}
+                  color={failed ? colors.inkSoft : complete ? colors.success : colors.primary}
+                  edge={failed ? colors.ink : complete ? '#146B3C' : colors.primaryDark}
                   studs={5}
                   style={styles.summary}
                 >
                   {loading ? (
                     <ActivityIndicator color="#fff" />
+                  ) : failed ? (
+                    <>
+                      <Text style={styles.sumLabel}>NO SE PUDO COMPROBAR</Text>
+                      <Text style={styles.sumSub}>Cierra y vuelve a abrir el set para reintentarlo</Text>
+                    </>
                   ) : complete ? (
                     <>
                       <Text style={styles.sumLabel}>{mounted ? 'SET MONTADO' : 'PUEDES MONTARLO'}</Text>
@@ -184,6 +191,9 @@ export default function SetDetailModal({ set, onClose, onChangeStatus, onResync,
           bottom={insets.bottom + 20}
           onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
         />
+
+        {/* El modal tapa el Toast de la pantalla de Sets, así que los avisos se pintan también aquí dentro. */}
+        <Toast message={toast} />
       </View>
     </Modal>
   );
