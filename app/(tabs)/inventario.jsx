@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
 import InventoryFilters from '../../components/InventoryFilters';
@@ -6,6 +6,7 @@ import InventoryTotals from '../../components/InventoryTotals';
 import PartDetailModal from '../../components/PartDetailModal';
 import PartRow from '../../components/PartRow';
 import ScreenHeader from '../../components/ScreenHeader';
+import ScrollToTopButton from '../../components/ScrollToTopButton';
 import useBoxes from '../../hooks/useBoxes';
 import useColors from '../../hooks/useColors';
 import useDebouncedValue from '../../hooks/useDebouncedValue';
@@ -21,6 +22,8 @@ const RowSeparator = () => <View style={{ height: spacing.md }} />;
 export default function Inventario() {
   const [filters, setFilters] = useState(NO_FILTERS);
   const [detailItem, setDetailItem] = useState(null); // fila abierta en el detalle
+  const listRef = useRef(null);
+  const [showTop, setShowTop] = useState(false); // el botón "subir" solo aparece tras bajar un trozo
   const debouncedQuery = useDebouncedValue(filters.query, 300);
   const { boxes, reload: reloadBoxes } = useBoxes();
   const colorsState = useColors();
@@ -53,6 +56,9 @@ export default function Inventario() {
       <ScreenHeader title="Inventario" subtitle="Todo lo que ya tienes en cajas" />
 
       <FlatList
+        ref={listRef}
+        onScroll={(e) => setShowTop(e.nativeEvent.contentOffset.y > 600)}
+        scrollEventThrottle={100}
         data={inv.items}
         keyExtractor={(it) => `${it.part_num}-${it.color_id}`}
         renderItem={({ item }) => <PartRow item={item} highlightBoxId={filters.boxId} onPress={setDetailItem} />}
@@ -95,6 +101,13 @@ export default function Inventario() {
         refreshControl={
           <RefreshControl refreshing={inv.refreshing} onRefresh={inv.refresh} tintColor={colors.primary} colors={[colors.primary]} />
         }
+      />
+
+      {/* bottom: por encima de la barra de pestañas flotante (66 de alto + 18 de margen) */}
+      <ScrollToTopButton
+        visible={showTop}
+        bottom={100}
+        onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
       />
 
       <PartDetailModal item={detailItem} onClose={() => setDetailItem(null)} onChanged={reload} />

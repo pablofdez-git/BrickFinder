@@ -6,6 +6,7 @@ import { colors, radius, shadow } from '../lib/theme';
 export default function BrickCard({
   children,
   onPress,
+  onLongPress,
   color = colors.card,
   edge = colors.border,
   studs = 4,
@@ -19,8 +20,9 @@ export default function BrickCard({
         ))}
       </View>
       <Pressable
-        disabled={!onPress}
+        disabled={!onPress && !onLongPress}
         onPress={onPress}
+        onLongPress={onLongPress}
         style={({ pressed }) => [
           styles.body,
           { backgroundColor: color, borderBottomColor: edge },

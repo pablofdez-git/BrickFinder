@@ -22,7 +22,7 @@ export default function PartImage({ uri, size = 56 }) {
 const styles = StyleSheet.create({
   box: {
     borderRadius: radius.md,
-    backgroundColor: '#F7F5F0',
+    backgroundColor: '#fff', // las fotos de Rebrickable tienen fondo blanco: así no se ve el "cuadrado" de la imagen
     borderWidth: 1,
     borderColor: colors.border,
     alignItems: 'center',
