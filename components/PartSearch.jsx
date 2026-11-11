@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Keyboard, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BrickCard from './BrickCard';
 import CategoryChips from './CategoryChips';
@@ -10,7 +10,8 @@ import { colors, radius } from '../lib/theme';
 
 // Buscador de piezas. `selected` es la pieza elegida (o null); `recents` se muestra antes de escribir.
 // Cuando `resetKey` cambia (tras guardar) se vacía el texto, para empezar la siguiente búsqueda limpia.
-export default function PartSearch({ selected, onSelect, recents, inputRef, resetKey }) {
+// `onRemoveRecent(partNum)` quita una pieza de los recientes y `onClearRecents()` los vacía todos (opcionales).
+export default function PartSearch({ selected, onSelect, recents, inputRef, resetKey, onRemoveRecent, onClearRecents }) {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState(null);
   const { results, loading, error, active } = usePartSearch(query, group);
@@ -21,6 +22,12 @@ export default function PartSearch({ selected, onSelect, recents, inputRef, rese
     Keyboard.dismiss();
     onSelect(part);
   };
+
+  const confirmClear = () =>
+    Alert.alert('Limpiar recientes', '¿Quitar todas las piezas de la lista de recientes? No se borra nada del inventario.', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Limpiar', style: 'destructive', onPress: onClearRecents },
+    ]);
 
   const handleChange = () => {
     onSelect(null);
@@ -90,11 +97,29 @@ export default function PartSearch({ selected, onSelect, recents, inputRef, rese
         </View>
       ) : (
         <View style={styles.list}>
-          <Text style={styles.sectionTitle}>RECIENTES</Text>
+          <View style={styles.recentsHead}>
+            <Text style={styles.sectionTitle}>RECIENTES</Text>
+            {recents.length > 0 && !!onClearRecents && (
+              <Pressable onPress={confirmClear} hitSlop={8}>
+                <Text style={styles.clearText}>Limpiar</Text>
+              </Pressable>
+            )}
+          </View>
           {recents.length === 0 ? (
             <Text style={styles.empty}>Aquí aparecerán las piezas que uses.</Text>
           ) : (
-            recents.map((p) => <PartResultRow key={p.part_num} part={p} onPress={handleSelect} />)
+            recents.map((p) => (
+              <View key={p.part_num} style={styles.recentRow}>
+                <View style={styles.recentMain}>
+                  <PartResultRow part={p} onPress={handleSelect} />
+                </View>
+                {!!onRemoveRecent && (
+                  <Pressable onPress={() => onRemoveRecent(p.part_num)} hitSlop={8} style={styles.removeBtn}>
+                    <Ionicons name="close" size={18} color={colors.textMuted} />
+                  </Pressable>
+                )}
+              </View>
+            ))
           )}
         </View>
       )}
@@ -118,7 +143,12 @@ const styles = StyleSheet.create({
   input: { flex: 1, fontSize: 16, fontWeight: '600', color: colors.text, paddingVertical: 0 },
   chips: { marginTop: 12 },
   list: { marginTop: 12, gap: 2 },
-  sectionTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 2, color: colors.textMuted, marginBottom: 6 },
+  sectionTitle: { fontSize: 11, fontWeight: '800', letterSpacing: 2, color: colors.textMuted },
+  recentsHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 },
+  clearText: { fontSize: 13, fontWeight: '800', color: colors.primary },
+  recentRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  recentMain: { flex: 1 },
+  removeBtn: { width: 32, height: 32, borderRadius: 16, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' },
   loader: { marginVertical: 18 },
   empty: { color: colors.textMuted, paddingVertical: 14, textAlign: 'center' },
   error: { color: colors.danger, fontWeight: '600', paddingVertical: 10 },

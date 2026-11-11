@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import BrickCard from './BrickCard';
 import { matchesQuery } from '../lib/searchTerms';
@@ -37,9 +37,16 @@ function Swatch({ color, selected, onPress }) {
 }
 
 // `colors` llega ordenada de más a menos usado; `recentIds` son los últimos usados (el más reciente primero).
-export default function ColorPicker({ colors, recentIds, selectedId, onSelect, loading, error }) {
+// `onClearRecents()` (opcional) vacía la lista de recientes; el color elegido no cambia.
+export default function ColorPicker({ colors, recentIds, selectedId, onSelect, onClearRecents, loading, error }) {
   const [showAll, setShowAll] = useState(false);
   const [filter, setFilter] = useState('');
+
+  const confirmClear = () =>
+    Alert.alert('Limpiar colores recientes', 'Los colores volverán a ordenarse del más al menos usado en LEGO. El color elegido no cambia.', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Limpiar', style: 'destructive', onPress: onClearRecents },
+    ]);
 
   const selected = colors.find((c) => c.id === selectedId) ?? null;
 
@@ -99,6 +106,13 @@ export default function ColorPicker({ colors, recentIds, selectedId, onSelect, l
         ))}
       </View>
       {showAll && visible.length === 0 && <Text style={styles.empty}>Ningún color coincide</Text>}
+
+      {recentIds.length > 0 && !!onClearRecents && (
+        <Pressable style={styles.clearRecents} onPress={confirmClear} hitSlop={6}>
+          <Ionicons name="time-outline" size={16} color={theme.textMuted} />
+          <Text style={styles.clearRecentsText}>Limpiar colores recientes</Text>
+        </Pressable>
+      )}
 
       {colors.length > 0 && (
         <Pressable
@@ -170,6 +184,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   filterInput: { flex: 1, fontSize: 15, color: theme.text, paddingVertical: 0 },
+  clearRecents: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, paddingVertical: 4 },
+  clearRecentsText: { fontSize: 13, fontWeight: '700', color: theme.textMuted },
   toggle: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -5,7 +5,8 @@ import { colors, radius } from '../lib/theme';
 
 // Una caja dentro del detalle de una pieza: cantidad, con botones para editarla o borrarla.
 // onSave(nuevaCantidad) y onDelete() son asíncronos y pueden lanzar error.
-export default function BoxQuantityRow({ box, onSave, onDelete, disabled }) {
+// onMove() y onChangeColor() (opcionales) abren la hoja para mover a otra caja o corregir el color.
+export default function BoxQuantityRow({ box, onSave, onDelete, onMove, onChangeColor, disabled }) {
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
@@ -101,6 +102,22 @@ export default function BoxQuantityRow({ box, onSave, onDelete, disabled }) {
           </>
         )}
       </View>
+      {!editing && !busy && (onMove || onChangeColor) && (
+        <View style={styles.actions}>
+          {!!onMove && (
+            <Pressable style={styles.action} onPress={onMove} disabled={disabled} hitSlop={4}>
+              <Ionicons name="swap-horizontal" size={16} color={colors.ink} />
+              <Text style={styles.actionText}>Mover a otra caja</Text>
+            </Pressable>
+          )}
+          {!!onChangeColor && (
+            <Pressable style={styles.action} onPress={onChangeColor} disabled={disabled} hitSlop={4}>
+              <Ionicons name="color-palette" size={16} color={colors.ink} />
+              <Text style={styles.actionText}>Cambiar color</Text>
+            </Pressable>
+          )}
+        </View>
+      )}
       {!!error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
@@ -139,6 +156,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   okBtn: { backgroundColor: colors.success },
+  actions: { flexDirection: 'row', gap: 8, marginTop: 8, flexWrap: 'wrap' },
+  action: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.bg,
+    borderRadius: radius.pill,
+    paddingVertical: 7,
+    paddingHorizontal: 12,
+  },
+  actionText: { fontSize: 13, fontWeight: '800', color: colors.ink },
   spinner: { width: 80 },
   error: { color: colors.danger, fontWeight: '600', marginTop: 6, fontSize: 13 },
 });

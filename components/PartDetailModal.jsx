@@ -1,19 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import BoxQuantityRow from './BoxQuantityRow';
 import BrickCard from './BrickCard';
 import KeyboardAwareScrollView from './KeyboardAwareScrollView';
+import MovePartSheet from './MovePartSheet';
+import OptionSheet from './OptionSheet';
 import PartImage from './PartImage';
-import { deleteInventoryRow, setInventoryQuantity } from '../lib/inventoryApi';
+import {
+  changeInventoryColor,
+  deleteInventoryRow,
+  fetchPartBoxes,
+  movePartBetweenBoxes,
+  setInventoryQuantity,
+} from '../lib/inventoryApi';
 import { colors, radius, spacing } from '../lib/theme';
 
 // Detalle de una pieza + color, a pantalla completa: cantidad en cada caja, con opción de editarla o borrarla.
 // `item` es una fila de inventory_summary (o null si está cerrado). `onChanged` avisa de que hubo cambios.
-export default function PartDetailModal({ item, onClose, onChanged }) {
+// `allBoxes` ([{ id, name }]) y `allColors` ([{ id, name, rgb }]) alimentan "mover a otra caja" y "cambiar color".
+export default function PartDetailModal({ item, onClose, onChanged, allBoxes = [], allColors = [] }) {
   const insets = useSafeAreaInsets();
   const [boxes, setBoxes] = useState([]);
+  const [moveBox, setMoveBox] = useState(null); // fila de caja desde la que se mueve
+  const [colorBox, setColorBox] = useState(null); // fila de caja cuyo color se corrige
+
+  const colorOptions = useMemo(
+    () => allColors.filter((c) => c.id !== item?.color_id).map((c) => ({ key: c.id, label: c.name, rgb: c.rgb })),
+    [allColors, item?.color_id]
+  );
 
   // Copia local de las cajas para reflejar los cambios al instante, sin esperar a recargar la lista.
   useEffect(() => {
@@ -26,6 +42,29 @@ export default function PartDetailModal({ item, onClose, onChanged }) {
   const usedIn = item.used_in ?? []; // sets montados que usan esta pieza + color
   const used = Number(item.used_quantity ?? 0);
   const key = { partNum: item.part_num, colorId: item.color_id };
+
+  // Tras mover o cambiar de color se vuelve a leer en qué cajas está esta pieza + color.
+  // Si ya no queda en ninguna (por ejemplo, se cambió el color en su única caja), se cierra el detalle.
+  const refresh = async () => {
+    const rows = await fetchPartBoxes(item.part_num, item.color_id);
+    setBoxes(rows);
+    onChanged?.();
+    if (rows.length === 0) onClose();
+  };
+
+  const handleMove = async (toBoxId, qty) => {
+    await movePartBetweenBoxes({ fromBoxId: moveBox.box_id, toBoxId, qty, ...key });
+    await refresh();
+  };
+
+  const handleColor = async (newColorId) => {
+    try {
+      await changeInventoryColor({ boxId: colorBox.box_id, partNum: item.part_num, oldColorId: item.color_id, newColorId });
+      await refresh();
+    } catch (e) {
+      Alert.alert('No se pudo cambiar el color', e.message);
+    }
+  };
 
   const handleSave = async (box, qty) => {
     await setInventoryQuantity({ boxId: box.box_id, qty, ...key });
@@ -96,7 +135,13 @@ export default function PartDetailModal({ item, onClose, onChanged }) {
 
           {boxes.map((b) => (
             <BrickCard key={b.box_id} edge={colors.border} studs={3} style={styles.boxCard}>
-              <BoxQuantityRow box={b} onSave={(qty) => handleSave(b, qty)} onDelete={() => handleDelete(b)} />
+              <BoxQuantityRow
+                box={b}
+                onSave={(qty) => handleSave(b, qty)}
+                onDelete={() => handleDelete(b)}
+                onMove={allBoxes.length > 1 ? () => setMoveBox(b) : undefined}
+                onChangeColor={allColors.length > 0 ? () => setColorBox(b) : undefined}
+              />
             </BrickCard>
           ))}
 
@@ -120,6 +165,23 @@ export default function PartDetailModal({ item, onClose, onChanged }) {
             </>
           )}
         </KeyboardAwareScrollView>
+
+        <MovePartSheet
+          box={moveBox}
+          destinations={allBoxes.filter((b) => b.id !== moveBox?.box_id)}
+          onMove={handleMove}
+          onClose={() => setMoveBox(null)}
+        />
+        <OptionSheet
+          visible={!!colorBox}
+          title={`Color correcto de ${item.part_num}`}
+          options={colorOptions}
+          selectedKey={null}
+          showAll={false}
+          searchable
+          onSelect={handleColor}
+          onClose={() => setColorBox(null)}
+        />
       </View>
     </Modal>
   );

@@ -41,5 +41,32 @@ export default function useRecents() {
     AsyncStorage.setItem(COLORS_KEY, JSON.stringify(colorsRef.current));
   }, []);
 
-  return { recentParts, recentColors, addRecentPart, addRecentColor };
+  // Gestión de recientes: quitar una pieza, o vaciar la lista de piezas / la de colores.
+  const removeRecentPart = useCallback((partNum) => {
+    partsRef.current = partsRef.current.filter((x) => x.part_num !== partNum);
+    setRecentParts(partsRef.current);
+    AsyncStorage.setItem(PARTS_KEY, JSON.stringify(partsRef.current));
+  }, []);
+
+  const clearRecentParts = useCallback(() => {
+    partsRef.current = [];
+    setRecentParts([]);
+    AsyncStorage.removeItem(PARTS_KEY);
+  }, []);
+
+  const clearRecentColors = useCallback(() => {
+    colorsRef.current = [];
+    setRecentColors([]);
+    AsyncStorage.removeItem(COLORS_KEY);
+  }, []);
+
+  return {
+    recentParts,
+    recentColors,
+    addRecentPart,
+    addRecentColor,
+    removeRecentPart,
+    clearRecentParts,
+    clearRecentColors,
+  };
 }

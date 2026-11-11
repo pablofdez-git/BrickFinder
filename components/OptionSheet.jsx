@@ -16,6 +16,7 @@ export default function OptionSheet({
   onClose,
   searchable = false,
   allLabel = 'Todas',
+  showAll = true, // false = sin la opción "Todas" (por ejemplo, al elegir un destino obligatorio)
 }) {
   const [filter, setFilter] = useState('');
   const { height } = useWindowDimensions();
@@ -65,7 +66,7 @@ export default function OptionSheet({
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="on-drag"
           ListHeaderComponent={
-            !f ? (
+            showAll && !f ? (
               <Pressable
                 style={[styles.option, selectedKey == null && styles.optionOn]}
                 onPress={() => choose(null)}

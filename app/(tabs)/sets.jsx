@@ -13,7 +13,7 @@ import { colors, spacing, TAB_BAR_SPACE } from '../../lib/theme';
 const RowSeparator = () => <View style={{ height: spacing.md }} />;
 
 export default function Sets() {
-  const { sets, loading, refreshing, error, reload, refresh, add, changeStatus, resync, remove } = useSets();
+  const { sets, loading, refreshing, error, reload, refresh, add, changeStatus, rename, resync, remove } = useSets();
   const [toast, setToast] = useState(null); // { id, type, text }
   // Se guarda solo el número y se busca en la lista, así el detalle se actualiza cuando la lista se recarga.
   const [selectedNum, setSelectedNum] = useState(null);
@@ -49,6 +49,20 @@ export default function Sets() {
     } catch (e) {
       hapticError();
       notify('error', `No se pudo cambiar el estado: ${e.message}`);
+    }
+  }
+
+  // Devuelve true/false para que el detalle sepa si el cambio se guardó.
+  async function handleRename(setNum, name) {
+    try {
+      await rename(setNum, name);
+      hapticSuccess();
+      notify('ok', 'Nombre cambiado');
+      return true;
+    } catch (e) {
+      hapticError();
+      notify('error', `No se pudo cambiar el nombre: ${e.message}`);
+      return false;
     }
   }
 
@@ -130,6 +144,7 @@ export default function Sets() {
         toast={toast}
         onClose={() => setSelectedNum(null)}
         onChangeStatus={handleChangeStatus}
+        onRename={handleRename}
         onResync={handleResync}
         onDelete={handleDelete}
       />

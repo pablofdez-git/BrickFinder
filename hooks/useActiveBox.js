@@ -48,7 +48,19 @@ export default function useActiveBox() {
     [selectBox]
   );
 
+  // Vuelve a pedir las cajas (tras renombrar, mover o borrar en el gestor). Si la caja activa ya no existe,
+  // se deja sin caja activa para no guardar piezas en una caja inexistente.
+  const reload = useCallback(async () => {
+    try {
+      const list = await fetchBoxes();
+      setBoxes(list);
+      setActiveBoxId((prev) => (prev != null && list.some((b) => b.id === prev) ? prev : null));
+    } catch {
+      // si falla se queda la lista anterior
+    }
+  }, []);
+
   const activeBox = boxes.find((b) => b.id === activeBoxId) ?? null;
 
-  return { boxes, activeBox, selectBox, addBox, loading, error };
+  return { boxes, activeBox, selectBox, addBox, reload, loading, error };
 }

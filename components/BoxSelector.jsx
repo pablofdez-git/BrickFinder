@@ -13,7 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import BrickCard from './BrickCard';
 import { colors, radius, spacing } from '../lib/theme';
 
-export default function BoxSelector({ boxes, activeBox, onSelect, onCreate, loading }) {
+// `onManage` (opcional): abre el gestor de cajas (renombrar, mover, borrar).
+export default function BoxSelector({ boxes, activeBox, onSelect, onCreate, onManage, loading }) {
   const [open, setOpen] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState('');
@@ -116,6 +117,19 @@ export default function BoxSelector({ boxes, activeBox, onSelect, onCreate, load
               </Pressable>
             )}
             {!!error && <Text style={styles.error}>{error}</Text>}
+
+            {!creating && !!onManage && (
+              <Pressable
+                style={styles.manage}
+                onPress={() => {
+                  close();
+                  onManage();
+                }}
+              >
+                <Ionicons name="settings-outline" size={18} color={colors.textMuted} />
+                <Text style={styles.manageText}>Gestionar cajas (renombrar, mover, borrar)</Text>
+              </Pressable>
+            )}
           </View>
         </View>
       </Modal>
@@ -216,4 +230,6 @@ const styles = StyleSheet.create({
   },
   createBtnText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   error: { color: colors.danger, marginTop: spacing.sm, fontWeight: '600' },
+  manage: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: spacing.md, paddingVertical: 8 },
+  manageText: { fontSize: 14, fontWeight: '700', color: colors.textMuted },
 });

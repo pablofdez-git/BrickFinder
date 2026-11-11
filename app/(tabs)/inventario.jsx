@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 import { useFocusEffect } from 'expo-router';
+import BoxManagerModal from '../../components/BoxManagerModal';
 import InventoryFilters from '../../components/InventoryFilters';
 import InventoryTotals from '../../components/InventoryTotals';
 import PartDetailModal from '../../components/PartDetailModal';
@@ -22,6 +23,7 @@ const RowSeparator = () => <View style={{ height: spacing.md }} />;
 export default function Inventario() {
   const [filters, setFilters] = useState(NO_FILTERS);
   const [detailItem, setDetailItem] = useState(null); // fila abierta en el detalle
+  const [managingBoxes, setManagingBoxes] = useState(false); // gestor de cajas abierto
   const listRef = useRef(null);
   const [showTop, setShowTop] = useState(false); // el botón "subir" solo aparece tras bajar un trozo
   const debouncedQuery = useDebouncedValue(filters.query, 300);
@@ -53,6 +55,14 @@ export default function Inventario() {
     }, [reload, reloadBoxes])
   );
 
+  // Tras renombrar, mover o borrar cajas: se recargan cajas y lista, y si la caja por la que se filtraba
+  // ya no existe se quita ese filtro (si no, la lista se quedaría vacía sin explicación).
+  const handleBoxesChanged = useCallback(async () => {
+    const list = await reloadBoxes();
+    if (list) setFilters((f) => (f.boxId != null && !list.some((b) => b.id === f.boxId) ? { ...f, boxId: null } : f));
+    reload();
+  }, [reloadBoxes, reload]);
+
   return (
     <View style={styles.screen}>
       <ScreenHeader title="Inventario" subtitle="Todo lo que ya tienes en cajas" />
@@ -70,7 +80,7 @@ export default function Inventario() {
         keyboardDismissMode="on-drag"
         ListHeaderComponent={
           <View style={styles.listHead}>
-            <InventoryTotals totals={inv.totals} />
+            <InventoryTotals totals={inv.totals} onPressBoxes={() => setManagingBoxes(true)} />
             <InventoryFilters
               value={filters}
               onChange={(patch) => setFilters((f) => ({ ...f, ...patch }))}
@@ -112,7 +122,15 @@ export default function Inventario() {
         onPress={() => listRef.current?.scrollToOffset({ offset: 0, animated: true })}
       />
 
-      <PartDetailModal item={detailItem} onClose={() => setDetailItem(null)} onChanged={reload} />
+      <BoxManagerModal visible={managingBoxes} onClose={() => setManagingBoxes(false)} onChanged={handleBoxesChanged} />
+
+      <PartDetailModal
+        item={detailItem}
+        onClose={() => setDetailItem(null)}
+        onChanged={reload}
+        allBoxes={boxes}
+        allColors={colorsState.colors}
+      />
     </View>
   );
 }

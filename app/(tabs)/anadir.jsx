@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
+import BoxManagerModal from '../../components/BoxManagerModal';
 import BoxSelector from '../../components/BoxSelector';
 import ColorPicker from '../../components/ColorPicker';
 import KeyboardAwareScrollView from '../../components/KeyboardAwareScrollView';
@@ -18,8 +19,17 @@ import { addToInventory } from '../../lib/inventoryApi';
 import { colors, spacing, TAB_BAR_SPACE } from '../../lib/theme';
 
 export default function Anadir() {
-  const { boxes, activeBox, selectBox, addBox, loading, error } = useActiveBox();
-  const { recentParts, recentColors, addRecentPart, addRecentColor } = useRecents();
+  const { boxes, activeBox, selectBox, addBox, reload: reloadBoxes, loading, error } = useActiveBox();
+  const [managingBoxes, setManagingBoxes] = useState(false); // gestor de cajas abierto
+  const {
+    recentParts,
+    recentColors,
+    addRecentPart,
+    addRecentColor,
+    removeRecentPart,
+    clearRecentParts,
+    clearRecentColors,
+  } = useRecents();
   const colorsState = useColors();
   const session = useSession();
   const [part, setPart] = useState(null);
@@ -98,6 +108,7 @@ export default function Anadir() {
           activeBox={activeBox}
           onSelect={selectBox}
           onCreate={addBox}
+          onManage={() => setManagingBoxes(true)}
           loading={loading}
         />
         {!!error && <Text style={styles.error}>No se pudieron cargar las cajas: {error}</Text>}
@@ -108,6 +119,8 @@ export default function Anadir() {
           recents={recentParts}
           inputRef={searchRef}
           resetKey={resetKey}
+          onRemoveRecent={removeRecentPart}
+          onClearRecents={clearRecentParts}
         />
 
         <ColorPicker
@@ -115,6 +128,7 @@ export default function Anadir() {
           recentIds={recentColors}
           selectedId={colorId}
           onSelect={setColorId}
+          onClearRecents={clearRecentColors}
           loading={colorsState.loading}
           error={colorsState.error}
         />
@@ -130,6 +144,8 @@ export default function Anadir() {
           error={session.error}
         />
       </KeyboardAwareScrollView>
+
+      <BoxManagerModal visible={managingBoxes} onClose={() => setManagingBoxes(false)} onChanged={reloadBoxes} />
 
       <Toast message={toast} />
     </View>

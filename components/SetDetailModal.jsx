@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Modal, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import BrickCard from './BrickCard';
@@ -17,11 +17,13 @@ const keyOf = (r) => `${r.part_num}-${r.color_id}-${r.is_spare}`;
 // Detalle de un set a pantalla completa: qué piezas tienes, cuáles faltan y en qué caja está cada una.
 // `set` es una fila de sets_summary (o null si está cerrado). Los cambios (estado, borrar) los hace quien llama
 // con `onChangeStatus(setNum, status)` y `onDelete(setNum)`; ambas devuelven una promesa.
-export default function SetDetailModal({ set, toast, onClose, onChangeStatus, onResync, onDelete }) {
+export default function SetDetailModal({ set, toast, onClose, onChangeStatus, onRename, onResync, onDelete }) {
   const insets = useSafeAreaInsets();
   const { rows, loading, error, reload } = useSetCheck(set?.set_num);
   const [filters, setFilters] = useState({ onlyMissing: false, showSpares: false });
   const [busy, setBusy] = useState(false);
+  const [editingName, setEditingName] = useState(false);
+  const [nameText, setNameText] = useState('');
   const listRef = useRef(null);
   const [showTop, setShowTop] = useState(false); // el botón "subir" solo aparece tras bajar un trozo
 
@@ -45,6 +47,25 @@ export default function SetDetailModal({ set, toast, onClose, onChangeStatus, on
     try {
       await onChangeStatus(set.set_num, mounted ? 'pendiente' : 'montado');
       await reload(); // la disponibilidad cambia al marcar/desmarcar
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function startRename() {
+    setNameText(set.name);
+    setEditingName(true);
+  }
+
+  async function saveName() {
+    const clean = nameText.trim();
+    if (!clean || clean === set.name) {
+      setEditingName(false); // vacío o sin cambios: se descarta
+      return;
+    }
+    setBusy(true);
+    try {
+      if (await onRename(set.set_num, clean)) setEditingName(false);
     } finally {
       setBusy(false);
     }
@@ -99,6 +120,9 @@ export default function SetDetailModal({ set, toast, onClose, onChangeStatus, on
                     <Text style={styles.backText}>Volver</Text>
                   </Pressable>
                   <View style={styles.tools}>
+                    <Pressable onPress={startRename} disabled={busy || editingName} hitSlop={10} style={[styles.tool, (busy || editingName) && { opacity: 0.4 }]}>
+                      <Ionicons name="pencil" size={21} color="#fff" />
+                    </Pressable>
                     <Pressable onPress={resync} disabled={busy} hitSlop={10} style={[styles.tool, busy && { opacity: 0.4 }]}>
                       <Ionicons name="sync" size={22} color="#fff" />
                     </Pressable>
@@ -111,9 +135,37 @@ export default function SetDetailModal({ set, toast, onClose, onChangeStatus, on
                 <View style={styles.headRow}>
                   <PartImage uri={set.img_url} size={96} />
                   <View style={styles.headInfo}>
-                    <Text style={styles.name} numberOfLines={3}>
-                      {set.name}
-                    </Text>
+                    {editingName ? (
+                      <View style={styles.nameEdit}>
+                        <TextInput
+                          style={styles.nameInput}
+                          value={nameText}
+                          onChangeText={setNameText}
+                          autoFocus
+                          selectTextOnFocus
+                          maxLength={120}
+                          returnKeyType="done"
+                          onSubmitEditing={saveName}
+                          editable={!busy}
+                        />
+                        {busy ? (
+                          <ActivityIndicator color={colors.accent} />
+                        ) : (
+                          <>
+                            <Pressable style={[styles.nameBtn, styles.nameOk]} onPress={saveName} hitSlop={6}>
+                              <Ionicons name="checkmark" size={20} color="#fff" />
+                            </Pressable>
+                            <Pressable style={styles.nameBtn} onPress={() => setEditingName(false)} hitSlop={6}>
+                              <Ionicons name="close" size={20} color="#fff" />
+                            </Pressable>
+                          </>
+                        )}
+                      </View>
+                    ) : (
+                      <Text style={styles.name} numberOfLines={3}>
+                        {set.name}
+                      </Text>
+                    )}
                     <View style={styles.numPill}>
                       <Text style={styles.num}>
                         {set.set_num}
@@ -229,6 +281,22 @@ const styles = StyleSheet.create({
   headRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   headInfo: { flex: 1, gap: 8 },
   name: { fontSize: 20, fontWeight: '900', color: '#fff' },
+  nameEdit: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  nameInput: {
+    flex: 1,
+    height: 44,
+    backgroundColor: colors.inkSoft,
+    borderWidth: 1.5,
+    borderColor: colors.accent,
+    borderRadius: radius.md,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#fff',
+    paddingVertical: 0,
+  },
+  nameBtn: { width: 36, height: 36, borderRadius: 18, backgroundColor: colors.inkSoft, alignItems: 'center', justifyContent: 'center' },
+  nameOk: { backgroundColor: colors.success },
   numPill: { alignSelf: 'flex-start', backgroundColor: colors.accent, borderRadius: 6, paddingHorizontal: 9, paddingVertical: 3 },
   num: { fontSize: 13, fontWeight: '900', color: colors.ink, letterSpacing: 0.5 },
 
