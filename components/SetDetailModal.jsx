@@ -16,7 +16,7 @@ const keyOf = (r) => `${r.part_num}-${r.color_id}-${r.is_spare}`;
 // Detalle de un set a pantalla completa: qué piezas tienes, cuáles faltan y en qué caja está cada una.
 // `set` es una fila de sets_summary (o null si está cerrado). Los cambios (estado, borrar) los hace quien llama
 // con `onChangeStatus(setNum, status)` y `onDelete(setNum)`; ambas devuelven una promesa.
-export default function SetDetailModal({ set, onClose, onChangeStatus, onDelete }) {
+export default function SetDetailModal({ set, onClose, onChangeStatus, onResync, onDelete }) {
   const insets = useSafeAreaInsets();
   const { rows, loading, error, reload } = useSetCheck(set?.set_num);
   const [filters, setFilters] = useState({ onlyMissing: false, showSpares: false });
@@ -43,6 +43,16 @@ export default function SetDetailModal({ set, onClose, onChangeStatus, onDelete 
     try {
       await onChangeStatus(set.set_num, mounted ? 'pendiente' : 'montado');
       await reload(); // la disponibilidad cambia al marcar/desmarcar
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // Vuelve a bajar las piezas de Rebrickable (incluye las de las minifigs) y recarga la lista.
+  async function resync() {
+    setBusy(true);
+    try {
+      if (await onResync(set.set_num)) await reload();
     } finally {
       setBusy(false);
     }
@@ -86,9 +96,14 @@ export default function SetDetailModal({ set, onClose, onChangeStatus, onDelete 
                     <Ionicons name="arrow-back" size={20} color={colors.ink} />
                     <Text style={styles.backText}>Volver</Text>
                   </Pressable>
-                  <Pressable onPress={confirmDelete} hitSlop={10} style={styles.trash}>
-                    <Ionicons name="trash-outline" size={22} color="#fff" />
-                  </Pressable>
+                  <View style={styles.tools}>
+                    <Pressable onPress={resync} disabled={busy} hitSlop={10} style={[styles.tool, busy && { opacity: 0.4 }]}>
+                      <Ionicons name="sync" size={22} color="#fff" />
+                    </Pressable>
+                    <Pressable onPress={confirmDelete} hitSlop={10} style={styles.tool}>
+                      <Ionicons name="trash-outline" size={22} color="#fff" />
+                    </Pressable>
+                  </View>
                 </View>
 
                 <View style={styles.headRow}>
@@ -198,7 +213,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
   },
   backText: { fontSize: 15, fontWeight: '900', color: colors.ink },
-  trash: { padding: 6 },
+  tools: { flexDirection: 'row', gap: 10 },
+  tool: { padding: 6 },
 
   headRow: { flexDirection: 'row', gap: 16, alignItems: 'center' },
   headInfo: { flex: 1, gap: 8 },

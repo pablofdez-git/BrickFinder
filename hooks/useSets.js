@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { addSet, deleteSet, fetchSetsSummary, setSetStatus } from '../lib/setsApi';
+import { addSet, deleteSet, fetchSetsSummary, resyncSetParts, setSetStatus } from '../lib/setsApi';
 
 // Lista de sets con progreso, pull-to-refresh y las acciones (añadir, cambiar estado, borrar).
 // Las acciones lanzan el error al llamador (para mostrarlo en un Toast) y recargan la lista si van bien.
@@ -47,6 +47,14 @@ export default function useSets() {
     [reload]
   );
 
+  const resync = useCallback(
+    async (setNum) => {
+      await resyncSetParts(setNum);
+      await reload();
+    },
+    [reload]
+  );
+
   const remove = useCallback(
     async (setNum) => {
       await deleteSet(setNum);
@@ -55,5 +63,5 @@ export default function useSets() {
     [reload]
   );
 
-  return { sets, loading, refreshing, error, reload, refresh, add, changeStatus, remove };
+  return { sets, loading, refreshing, error, reload, refresh, add, changeStatus, resync, remove };
 }

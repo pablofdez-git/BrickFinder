@@ -13,7 +13,7 @@ import { colors, spacing, TAB_BAR_SPACE } from '../../lib/theme';
 const RowSeparator = () => <View style={{ height: spacing.md }} />;
 
 export default function Sets() {
-  const { sets, loading, refreshing, error, reload, refresh, add, changeStatus, remove } = useSets();
+  const { sets, loading, refreshing, error, reload, refresh, add, changeStatus, resync, remove } = useSets();
   const [toast, setToast] = useState(null); // { id, type, text }
   // Se guarda solo el número y se busca en la lista, así el detalle se actualiza cuando la lista se recarga.
   const [selectedNum, setSelectedNum] = useState(null);
@@ -49,6 +49,20 @@ export default function Sets() {
     } catch (e) {
       hapticError();
       notify('error', `No se pudo cambiar el estado: ${e.message}`);
+    }
+  }
+
+  // Devuelve true/false para que el detalle sepa si debe recargar sus piezas.
+  async function handleResync(setNum) {
+    try {
+      await resync(setNum);
+      hapticSuccess();
+      notify('ok', 'Piezas actualizadas');
+      return true;
+    } catch (e) {
+      hapticError();
+      notify('error', `No se pudo actualizar: ${e.message}`);
+      return false;
     }
   }
 
@@ -113,6 +127,7 @@ export default function Sets() {
         set={selected}
         onClose={() => setSelectedNum(null)}
         onChangeStatus={handleChangeStatus}
+        onResync={handleResync}
         onDelete={handleDelete}
       />
 
