@@ -23,6 +23,8 @@ export default function PartDetailModal({ item, onClose, onChanged }) {
   if (!item) return null;
 
   const total = boxes.reduce((sum, b) => sum + b.qty, 0);
+  const usedIn = item.used_in ?? []; // sets montados que usan esta pieza + color
+  const used = Number(item.used_quantity ?? 0);
   const key = { partNum: item.part_num, colorId: item.color_id };
 
   const handleSave = async (box, qty) => {
@@ -97,6 +99,26 @@ export default function PartDetailModal({ item, onClose, onChanged }) {
               <BoxQuantityRow box={b} onSave={(qty) => handleSave(b, qty)} onDelete={() => handleDelete(b)} />
             </BrickCard>
           ))}
+
+          {usedIn.length > 0 && (
+            <>
+              <Text style={styles.section}>USADAS EN SETS MONTADOS</Text>
+              {usedIn.map((s) => (
+                <BrickCard key={s.set_num} color="#E8F0FB" edge={colors.blue} studs={3} style={styles.usedCard}>
+                  <View style={styles.usedInfo}>
+                    <Text style={styles.usedName} numberOfLines={2}>
+                      {s.name}
+                    </Text>
+                    <Text style={styles.usedNum}>{s.set_num}</Text>
+                  </View>
+                  <Text style={styles.usedQty}>x{s.qty}</Text>
+                </BrickCard>
+              ))}
+              <Text style={styles.usedFree}>
+                {used.toLocaleString('es-ES')} en sets · {Math.max(total - used, 0).toLocaleString('es-ES')} libres
+              </Text>
+            </>
+          )}
         </KeyboardAwareScrollView>
       </View>
     </Modal>
@@ -148,4 +170,11 @@ const styles = StyleSheet.create({
 
   section: { fontSize: 11, fontWeight: '800', letterSpacing: 2, color: colors.textMuted, marginBottom: -6 },
   boxCard: { paddingVertical: 4 },
+
+  usedCard: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 },
+  usedInfo: { flex: 1, gap: 2 },
+  usedName: { fontSize: 15, fontWeight: '800', color: colors.text },
+  usedNum: { fontSize: 12, fontWeight: '700', color: colors.textMuted },
+  usedQty: { fontSize: 22, fontWeight: '900', color: colors.blue },
+  usedFree: { fontSize: 13, fontWeight: '700', color: colors.textMuted, textAlign: 'center' },
 });

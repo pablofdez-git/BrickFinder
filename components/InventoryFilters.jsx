@@ -21,7 +21,7 @@ function FilterPill({ icon, label, active, onPress }) {
 }
 
 // Buscador + filtros por caja, color y categoría.
-// `value`: { query, boxId, colorId, groupKey }. `onChange(parcial)` actualiza solo lo que cambia.
+// `value`: { query, boxId, colorId, groupKey, onlyUsed }. `onChange(parcial)` actualiza solo lo que cambia.
 export default function InventoryFilters({ value, onChange, boxes, allColors, resultCount }) {
   const [open, setOpen] = useState(null); // 'box' | 'color' | 'group' | null
 
@@ -36,7 +36,8 @@ export default function InventoryFilters({ value, onChange, boxes, allColors, re
   const colorName = allColors.find((c) => c.id === value.colorId)?.name;
   const groupLabel = CATEGORY_GROUPS.find((g) => g.key === value.groupKey)?.label;
 
-  const anyActive = !!value.query.trim() || value.boxId != null || value.colorId != null || !!value.groupKey;
+  const anyActive =
+    !!value.query.trim() || value.boxId != null || value.colorId != null || !!value.groupKey || !!value.onlyUsed;
 
   return (
     <View style={styles.wrap}>
@@ -75,12 +76,21 @@ export default function InventoryFilters({ value, onChange, boxes, allColors, re
         />
       </View>
 
+      {/* Interruptor (no desplegable): solo las piezas usadas en algún set montado. */}
+      <Pressable
+        onPress={() => onChange({ onlyUsed: !value.onlyUsed })}
+        style={({ pressed }) => [styles.pill, styles.usedPill, value.onlyUsed && styles.usedPillOn, pressed && { opacity: 0.7 }]}
+      >
+        <Ionicons name="construct" size={16} color={value.onlyUsed ? '#fff' : colors.blue} />
+        <Text style={[styles.pillText, { color: value.onlyUsed ? '#fff' : colors.blue }]}>Usadas en sets montados</Text>
+      </Pressable>
+
       {anyActive && (
         <View style={styles.summaryRow}>
           <Text style={styles.summary}>
             {resultCount == null ? 'Buscando...' : `${resultCount.toLocaleString('es-ES')} resultado${resultCount === 1 ? '' : 's'}`}
           </Text>
-          <Pressable onPress={() => onChange({ query: '', boxId: null, colorId: null, groupKey: null })} hitSlop={8}>
+          <Pressable onPress={() => onChange({ query: '', boxId: null, colorId: null, groupKey: null, onlyUsed: false })} hitSlop={8}>
             <Text style={styles.clear}>Limpiar filtros</Text>
           </Pressable>
         </View>
@@ -147,6 +157,8 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
   },
   pillOn: { backgroundColor: colors.ink, borderColor: colors.ink },
+  usedPill: { flex: 0, alignSelf: 'flex-start', paddingHorizontal: 14, borderColor: colors.blue },
+  usedPillOn: { backgroundColor: colors.blue, borderColor: colors.blue },
   pillText: { flexShrink: 1, fontSize: 13, fontWeight: '800', color: colors.text },
   pillTextOn: { color: colors.accent },
   summaryRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

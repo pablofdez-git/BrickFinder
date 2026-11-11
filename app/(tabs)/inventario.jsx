@@ -14,7 +14,7 @@ import useInventory from '../../hooks/useInventory';
 import { CATEGORY_GROUPS } from '../../lib/categoryGroups';
 import { colors, spacing, TAB_BAR_SPACE } from '../../lib/theme';
 
-const NO_FILTERS = { query: '', boxId: null, colorId: null, groupKey: null };
+const NO_FILTERS = { query: '', boxId: null, colorId: null, groupKey: null, onlyUsed: false };
 
 // Definido fuera del componente para que React no lo vuelva a crear en cada pintado.
 const RowSeparator = () => <View style={{ height: spacing.md }} />;
@@ -35,13 +35,15 @@ export default function Inventario() {
       boxId: filters.boxId,
       colorId: filters.colorId,
       catIds: CATEGORY_GROUPS.find((g) => g.key === filters.groupKey)?.ids ?? [],
+      onlyUsed: filters.onlyUsed,
     }),
-    [debouncedQuery, filters.boxId, filters.colorId, filters.groupKey]
+    [debouncedQuery, filters.boxId, filters.colorId, filters.groupKey, filters.onlyUsed]
   );
 
   const inv = useInventory(queryFilters);
   const { reload } = inv;
-  const filtering = !!debouncedQuery.trim() || filters.boxId != null || filters.colorId != null || !!filters.groupKey;
+  const filtering =
+    !!debouncedQuery.trim() || filters.boxId != null || filters.colorId != null || !!filters.groupKey || filters.onlyUsed;
 
   // Cada vez que se vuelve a esta pestaña (o cambian los filtros) se actualiza la lista.
   useFocusEffect(
