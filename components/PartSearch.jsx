@@ -11,7 +11,17 @@ import { colors, radius } from '../lib/theme';
 // Buscador de piezas. `selected` es la pieza elegida (o null); `recents` se muestra antes de escribir.
 // Cuando `resetKey` cambia (tras guardar) se vacía el texto, para empezar la siguiente búsqueda limpia.
 // `onRemoveRecent(partNum)` quita una pieza de los recientes y `onClearRecents()` los vacía todos (opcionales).
-export default function PartSearch({ selected, onSelect, recents, inputRef, resetKey, onRemoveRecent, onClearRecents }) {
+// `onPhoto()` (opcional) muestra el botón de cámara para reconocer la pieza por foto.
+export default function PartSearch({
+  selected,
+  onSelect,
+  recents,
+  inputRef,
+  resetKey,
+  onRemoveRecent,
+  onClearRecents,
+  onPhoto,
+}) {
   const [query, setQuery] = useState('');
   const [group, setGroup] = useState(null);
   const { results, loading, error, active } = usePartSearch(query, group);
@@ -62,6 +72,7 @@ export default function PartSearch({ selected, onSelect, recents, inputRef, rese
     <BrickCard edge={colors.border} studs={4}>
       <Text style={styles.label}>BUSCAR PIEZA</Text>
 
+      <View style={styles.inputRow}>
       <View style={styles.inputWrap}>
         <Ionicons name="search" size={20} color={colors.textMuted} />
         <TextInput
@@ -80,6 +91,12 @@ export default function PartSearch({ selected, onSelect, recents, inputRef, rese
             <Ionicons name="close-circle" size={20} color={colors.textMuted} />
           </Pressable>
         )}
+      </View>
+      {!!onPhoto && (
+        <Pressable onPress={onPhoto} style={({ pressed }) => [styles.cameraBtn, pressed && { opacity: 0.8 }]} hitSlop={4}>
+          <Ionicons name="camera" size={26} color={colors.ink} />
+        </Pressable>
+      )}
       </View>
 
       <View style={styles.chips}>
@@ -129,7 +146,19 @@ export default function PartSearch({ selected, onSelect, recents, inputRef, rese
 
 const styles = StyleSheet.create({
   label: { fontSize: 11, fontWeight: '800', letterSpacing: 2, color: colors.textMuted, marginBottom: 10 },
+  inputRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  cameraBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.accent,
+    borderBottomWidth: 4,
+    borderBottomColor: colors.accentDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   inputWrap: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,

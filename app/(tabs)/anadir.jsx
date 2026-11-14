@@ -5,6 +5,7 @@ import BoxSelector from '../../components/BoxSelector';
 import ColorPicker from '../../components/ColorPicker';
 import KeyboardAwareScrollView from '../../components/KeyboardAwareScrollView';
 import PartSearch from '../../components/PartSearch';
+import PhotoCandidatesSheet from '../../components/PhotoCandidatesSheet';
 import QuantityStepper from '../../components/QuantityStepper';
 import SaveButton from '../../components/SaveButton';
 import ScreenHeader from '../../components/ScreenHeader';
@@ -12,6 +13,7 @@ import SessionList from '../../components/SessionList';
 import Toast from '../../components/Toast';
 import useActiveBox from '../../hooks/useActiveBox';
 import useColors from '../../hooks/useColors';
+import usePhotoIdentify from '../../hooks/usePhotoIdentify';
 import useRecents from '../../hooks/useRecents';
 import useSession from '../../hooks/useSession';
 import { hapticError, hapticSuccess } from '../../lib/haptics';
@@ -32,6 +34,7 @@ export default function Anadir() {
   } = useRecents();
   const colorsState = useColors();
   const session = useSession();
+  const photo = usePhotoIdentify();
   const [part, setPart] = useState(null);
   const [colorId, setColorId] = useState(null);
   const [qty, setQty] = useState(1);
@@ -45,6 +48,13 @@ export default function Anadir() {
   useEffect(() => {
     if (colorId === null && recentColors.length > 0) setColorId(recentColors[0]);
   }, [recentColors, colorId]);
+
+  // Pieza elegida entre las que ha reconocido la foto (y su color, si se eligió uno).
+  const handlePhotoPick = (picked, pickedColorId) => {
+    setPart(picked);
+    if (pickedColorId != null) setColorId(pickedColorId);
+    photo.close();
+  };
 
   const missing = [];
   if (!activeBox) missing.push('caja');
@@ -121,6 +131,7 @@ export default function Anadir() {
           resetKey={resetKey}
           onRemoveRecent={removeRecentPart}
           onClearRecents={clearRecentParts}
+          onPhoto={photo.start}
         />
 
         <ColorPicker
@@ -144,6 +155,8 @@ export default function Anadir() {
           error={session.error}
         />
       </KeyboardAwareScrollView>
+
+      <PhotoCandidatesSheet photo={photo} onPick={handlePhotoPick} onRetry={photo.start} onClose={photo.close} />
 
       <BoxManagerModal visible={managingBoxes} onClose={() => setManagingBoxes(false)} onChanged={reloadBoxes} />
 
